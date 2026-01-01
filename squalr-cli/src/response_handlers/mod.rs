@@ -20,7 +20,7 @@ pub fn handle_engine_response(response: EngineCommandResponse) {
         EngineCommandResponse::Process(response) => handle_process_response(response),
         EngineCommandResponse::Results(response) => handle_scan_results_response(response),
         EngineCommandResponse::Project(response) => handle_project_response(response),
-        EngineCommandResponse::Scan(response) => handle_scan_response(response),
         EngineCommandResponse::Settings(response) => handle_settings_response(response),
+        _ => log::warn!("Unhandled engine response variant"),
     }
 }

@@ -1,5 +1,5 @@
 use crate::response_handlers::handle_engine_response;
-use squalr_engine::engine_execution_context::EngineExecutionContext;
+use squalr_engine_api::engine::engine_execution_context::EngineExecutionContext;
 use squalr_engine_api::commands::engine_command::EngineCommand;
 use std::io;
 use std::io::Write;

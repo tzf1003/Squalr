@@ -1,4 +1,5 @@
 use crate::structures::logging::log_event::LogEvent;
+use crossbeam_channel::Sender;
 use log::Record;
 use log4rs::append::Append;
 use std::{
@@ -10,13 +11,18 @@ use std::{
 pub struct LogHistoryAppender {
     max_retain_size: usize,
     log_history: Arc<RwLock<VecDeque<LogEvent>>>,
+    log_subscribers: Arc<RwLock<Vec<Sender<String>>>>,
 }
 
 impl LogHistoryAppender {
-    pub fn new(log_history: Arc<RwLock<VecDeque<LogEvent>>>) -> Self {
+    pub fn new(
+        log_history: Arc<RwLock<VecDeque<LogEvent>>>,
+        log_subscribers: Arc<RwLock<Vec<Sender<String>>>>,
+    ) -> Self {
         Self {
             max_retain_size: 4096,
             log_history,
+            log_subscribers,
         }
     }
 }
@@ -44,11 +50,14 @@ impl Append for LogHistoryAppender {
         &self,
         record: &Record,
     ) -> anyhow::Result<()> {
+        let message_str = format!("{}", record.args());
         match self.log_history.write() {
             Ok(mut log_history) => {
                 let level = record.level();
-                let message = format!("{}", record.args());
-                let event = LogEvent { message, level };
+                let event = LogEvent {
+                    message: message_str.clone(),
+                    level,
+                };
 
                 while log_history.len() >= self.max_retain_size {
                     log_history.pop_front();
@@ -59,6 +68,10 @@ impl Append for LogHistoryAppender {
             Err(_error) => {
                 // Just silently fail -- logging more errors inside a failing logging framework would risk infinite loops.
             }
+        }
+
+        if let Ok(mut subscribers) = self.log_subscribers.write() {
+            subscribers.retain(|sender| sender.send(message_str.clone()).is_ok());
         }
 
         Ok(())

@@ -4,10 +4,10 @@ use sysinfo::Pid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessInfo {
-    process_id: u32,
-    name: String,
-    is_windowed: bool,
-    icon: Option<ProcessIcon>,
+    pub process_id: u32,
+    pub name: String,
+    pub is_windowed: bool,
+    pub icon: Option<ProcessIcon>,
 }
 
 impl ProcessInfo {

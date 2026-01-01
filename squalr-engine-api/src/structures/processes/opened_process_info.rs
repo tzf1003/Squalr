@@ -5,11 +5,11 @@ use sysinfo::Pid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OpenedProcessInfo {
-    process_id: u32,
-    name: String,
-    handle: u64,
-    bitness: Bitness,
-    icon: Option<ProcessIcon>,
+    pub process_id: u32,
+    pub name: String,
+    pub handle: u64,
+    pub bitness: Bitness,
+    pub icon: Option<ProcessIcon>,
 }
 
 impl OpenedProcessInfo {

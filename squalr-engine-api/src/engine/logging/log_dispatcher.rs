@@ -1,4 +1,5 @@
 use crate::{engine::logging::log_history_appender::LogHistoryAppender, structures::logging::log_event::LogEvent};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use log::LevelFilter;
 use log4rs::{
     append::{console::ConsoleAppender, file::FileAppender},
@@ -14,12 +15,14 @@ use std::{
 
 pub struct LogDispatcher {
     log_history: Arc<RwLock<VecDeque<LogEvent>>>,
+    log_subscribers: Arc<RwLock<Vec<Sender<String>>>>,
 }
 
 impl LogDispatcher {
     pub fn new() -> Self {
         let logger = LogDispatcher {
             log_history: Arc::new(RwLock::new(VecDeque::new())),
+            log_subscribers: Arc::new(RwLock::new(Vec::new())),
         };
 
         if let Err(error) = logger.initialize() {
@@ -31,6 +34,14 @@ impl LogDispatcher {
 
     pub fn get_log_history(&self) -> &Arc<RwLock<VecDeque<LogEvent>>> {
         &self.log_history
+    }
+
+    pub fn subscribe_to_logs(&self) -> anyhow::Result<Receiver<String>> {
+        let (sender, receiver) = unbounded();
+        if let Ok(mut subscribers) = self.log_subscribers.write() {
+            subscribers.push(sender);
+        }
+        Ok(receiver)
     }
 
     fn initialize(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -56,7 +67,7 @@ impl LogDispatcher {
             .encoder(Box::new(PatternEncoder::new("{d(%Y-%m-%d %H:%M:%S)} - {l} - {t} - {m}\n")))
             .build(log_file)?;
 
-        let log_history_appender = LogHistoryAppender::new(self.log_history.clone());
+        let log_history_appender = LogHistoryAppender::new(self.log_history.clone(), self.log_subscribers.clone());
 
         let config = Config::builder()
             .appender(Appender::builder().build("stdout", Box::new(stdout)))
